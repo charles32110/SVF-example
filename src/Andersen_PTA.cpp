@@ -1,18 +1,11 @@
-#include "Andersen_pta.h"
+#include "Andersen_PTA.h"
 
 using namespace SVF;
 using namespace SVFUtil;
 using namespace llvm;
 using namespace std;
 
-void Andersen_pta::processAddr(const AddrCGEdge* addr){
-    NodeID dst = addr->getDstID();
-    NodeID src = addr->getSrcID();
-    if(addPts(dst,src))
-        pushIntoWorklist(dst);
-}
-
-void Andersen_pta::processAllAddr(){
+void Andersen_PTA::processAllAddr(){
     for (ConstraintGraph::const_iterator nodeIt = consCG->begin(), nodeEit = consCG->end(); nodeIt != nodeEit; nodeIt++)
     {
         ConstraintNode * cgNode = nodeIt->second;
@@ -22,21 +15,28 @@ void Andersen_pta::processAllAddr(){
     }
 }
 
-bool Andersen_pta::processStore(NodeID node, const ConstraintEdge* store){
+void Andersen_PTA::processAddr(const AddrCGEdge* addr){
+    NodeID dst = addr->getDstID();
+    NodeID src = addr->getSrcID();
+    if(addPts(dst,src))
+        pushIntoWorklist(dst);
+}
+
+bool Andersen_PTA::processStore(NodeID node, const ConstraintEdge* store){
     if (pag->isConstantObj(node) || isNonPointerObj(node))
         return false;
     NodeID src = store->getSrcID();
     return addCopyEdge(src, node);
 }
-        
-bool Andersen_pta::processLoad(NodeID node, const ConstraintEdge* load){
+
+bool Andersen_PTA::processLoad(NodeID node, const ConstraintEdge* load){
     if (pag->isConstantObj(node) || isNonPointerObj(node))
         return false;
     NodeID dst = load->getDstID();
     return addCopyEdge(node, dst);
 }
 
-bool Andersen_pta::processCopy(NodeID node, const ConstraintEdge* edge){
+bool Andersen_PTA::processCopy(NodeID node, const ConstraintEdge* edge){
     assert((SVFUtil::isa<CopyCGEdge>(edge)) && "not copy/call/ret ??");
     const PointsTo& srcPts = getPts(node);
     NodeID dst = edge->getDstID();
@@ -46,7 +46,7 @@ bool Andersen_pta::processCopy(NodeID node, const ConstraintEdge* edge){
     return changed;
 }
 
-bool Andersen_pta::processGepPts(const PointsTo& pts, const GepCGEdge* edge){
+bool Andersen_PTA::processGepPts(const PointsTo& pts, const GepCGEdge* edge){
     PointsTo tmpDstPts;
     for (PointsTo::iterator piter = pts.begin(), epiter = pts.end(); piter != epiter; ++piter)
     {
@@ -95,12 +95,12 @@ bool Andersen_pta::processGepPts(const PointsTo& pts, const GepCGEdge* edge){
     return false;
 }
 
-bool Andersen_pta::processGep(NodeID node, const GepCGEdge* edge){
+bool Andersen_PTA::processGep(NodeID node, const GepCGEdge* edge){
     const PointsTo& srcPts = getPts(node);
     return processGepPts(srcPts, edge);
 }
 
-void Andersen_pta::handleCopyGep(ConstraintNode* node){
+void Andersen_PTA::handleCopyGep(ConstraintNode* node){
     NodeID nodeId = node->getId();
     for (ConstraintEdge* edge : node->getCopyOutEdges()){
         processCopy(nodeId, edge);
@@ -112,7 +112,7 @@ void Andersen_pta::handleCopyGep(ConstraintNode* node){
     }
 }
 
-void Andersen_pta::handleLoadStore(ConstraintNode *node){
+void Andersen_PTA::handleLoadStore(ConstraintNode *node){
     NodeID nodeId = node->getId();
     for (PointsTo::iterator piter = getPts(nodeId).begin(), epiter = getPts(nodeId).end(); piter != epiter; ++piter)
     {
@@ -133,8 +133,9 @@ void Andersen_pta::handleLoadStore(ConstraintNode *node){
     }
 }
 
-void Andersen_pta::pointToAnalysis(){
+void Andersen_PTA::analyze(){
     consCG = new ConstraintGraph(pag);
+    setGraph(consCG);
     consCG->dump("consCG_initial");
     // Initialize worklist
     processAllAddr();
