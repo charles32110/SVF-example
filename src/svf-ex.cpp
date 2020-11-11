@@ -31,7 +31,7 @@
 #include "WPA/Andersen.h"
 #include "SABER/LeakChecker.h"
 #include "SVF-FE/PAGBuilder.h"
-#include "Andersen_pta.h"
+#include "Andersen_PTA.h"
 
 using namespace SVF;
 using namespace llvm;
@@ -243,7 +243,7 @@ int main(int argc, char ** argv) {
 
     LeakChecker *saber = new LeakChecker (); // if no checker is specified, we use leak checker as the default one.
     saber->runOnModule (svfModule);
-	Andersen_pta * andersen_pta = new Andersen_pta(pag);
-    andersen_pta -> pointToAnalysis();
+    Andersen_PTA * pta = new Andersen_PTA(pag);
+    pta -> analyze();
     return 0;
 }
