@@ -137,31 +137,30 @@ void traverseOnVFG(const SVFG* vfg, Value* val){
     	/// Value* val = pNode->getValue();
     }
 }
-
-//traverse from src node to sink node give the all paths
-void dfsOnICFG(ICFGNode* src,ICFGNode* snk, vector<const ICFGNode*>& seq, set<const ICFGNode*>& visited)
+//findSrcToSnkPath usedin function
+void backtracking(vector<vector<const ICFGNode*>>& paths, vector<const ICFGNode*>& seq,
+                  set<const ICFGNode*>& visited, ICFGNode* src, ICFGNode* snk )
 {
     visited.insert(src);
     seq.push_back(src);
     if (src->getId()==snk->getId())
     {
-        //output the sequence
-        for (const ICFGNode* & eit : seq){
-            cout << "-->" << eit->getId() ;
-        }
-        cout << "\n";
+        //store one reached seq
+        paths.push_back(seq);
     }
     for ( auto it = src->OutEdgeBegin(); it != src->OutEdgeEnd(); it ++) {
         ICFGNode *cur = (*it)->getDstNode();
         if (visited.find(cur) == visited.end()) {
-            dfsOnICFG(cur, snk, seq,visited);
+            backtracking(paths, seq, visited, cur, snk);
         }
     }
     visited.erase(src);
     seq.pop_back();
 }
 
-void findSrcSinkPaths(ICFG *icfg){
+
+vector<vector<const ICFGNode*>>findSrcToSnkPath(ICFG *icfg)
+{
     ICFGNode *srcNode,*sinkNode;
     srcNode = NULL;
     sinkNode = NULL;
@@ -178,18 +177,15 @@ void findSrcSinkPaths(ICFG *icfg){
                 sinkNode = node;
         }
     }
-    if( srcNode!= NULL && sinkNode != NULL){
-        outs() << "ICFG Source Node and Sink Node found: \n" << "srcID:"<<
-        srcNode->getId()<< "\tsinkID:"<< sinkNode->getId() << "\n" << "Path(s)：\n";
-        //mark for the status of node in seq
-        set<const ICFGNode *> visited;
-        //store for node sequence
-        vector<const ICFGNode *> seq;
-        dfsOnICFG(srcNode, sinkNode,seq,visited);
-    }else {
-        outs() << "src or sink not found! \n";
-    }
-}
+    vector<vector<const ICFGNode*>> paths;
+    set<const ICFGNode *> visited;
+    //store for node sequence
+    vector<const ICFGNode *> seq;
+    backtracking(paths,seq,visited,srcNode, sinkNode);
+    return paths;
+};
+
+
 
 int main(int argc, char ** argv) {
 
@@ -224,7 +220,15 @@ int main(int argc, char ** argv) {
     ICFG *icfg = pag->getICFG ();
     icfg->dump ("icfg");
 	// find all paths from source node to sink node
-	findSrcSinkPaths(icfg);
+    vector<vector<const ICFGNode*>> pa = findSrcToSnkPath(icfg);
+    for (unsigned int i = 0; i < pa.size(); i++)
+    {
+        for( unsigned int j = 0; j < pa[i].size(); ++j )
+        {
+            outs() << (pa[i][j])->getId()<< "->";
+        }
+        cout <<"done" << endl;
+    }
 
     /// Value-Flow Graph (VFG)
     VFG *vfg = new VFG (callgraph);
