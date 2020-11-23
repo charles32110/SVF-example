@@ -32,7 +32,7 @@
 #include "SABER/LeakChecker.h"
 #include "SVF-FE/PAGBuilder.h"
 #include "Andersen_PTA.h"
-
+#include "Reasoning_seq.h"
 using namespace SVF;
 using namespace llvm;
 using namespace std;
@@ -220,6 +220,7 @@ int main(int argc, char ** argv) {
     ICFG *icfg = pag->getICFG ();
     icfg->dump ("icfg");
 	// find all paths from source node to sink node
+	/**
     vector<vector<const ICFGNode*>> pa = findSrcToSnkPath(icfg);
     for (unsigned int i = 0; i < pa.size(); i++)
     {
@@ -229,7 +230,7 @@ int main(int argc, char ** argv) {
         }
         cout <<"done" << endl;
     }
-
+    **/
     /// Value-Flow Graph (VFG)
     VFG *vfg = new VFG (callgraph);
     vfg->dump ("vfg");
@@ -249,5 +250,15 @@ int main(int argc, char ** argv) {
     saber->runOnModule (svfModule);
     Andersen_PTA * pta = new Andersen_PTA(pag);
     pta -> analyze();
+    RSeq & p = RSeq::getInstance();
+    ICFGNode* src = icfg->getGNode(2);
+    ICFGNode* dst = icfg->getGNode(15);
+    vector<vector<ICFGNode*>> pa = p.findSrcToSnkPath(icfg, *src, *dst);
+    for (unsigned int i = 0; i < pa.size(); i++)
+    {
+        p.expr_seq(pa[i]);
+//        cout << "-------%d------"%i <<"\n";
+    }
+
     return 0;
 }
